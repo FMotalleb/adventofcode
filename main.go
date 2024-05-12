@@ -1,65 +1,57 @@
 package main
 
 import (
+	"crypto/md5"
+	"fmt"
 	"log"
+	"math/big"
 	"os"
+	"strconv"
 )
 
-var (
-	operators map[byte][2]int = map[byte][2]int{
-		94:  {1, 0},
-		62:  {0, 1},
-		118: {-1, 0},
-		60:  {0, -1},
-	}
-)
+//	func loadQuestion() []byte {
+//		file, err := os.Open("code.txt")
+//		if err != nil {
+//			log.Panicln("open file with error", err)
+//		}
+//		stat, err := file.Stat()
+//		if err != nil {
+//			log.Panicln("open file with error", err)
+//		}
+//		buffer := make([]byte, stat.Size())
+//		file.Read(buffer)
+//		file.Close()
+//		return buffer
+//	}
+func getHexString(bytesl []byte) string {
 
-func loadQuestion() []byte {
-	file, err := os.Open("code.txt")
-	if err != nil {
-		log.Panicln("open file with error", err)
-	}
-	stat, err := file.Stat()
-	if err != nil {
-		log.Panicln("open file with error", err)
-	}
-	buffer := make([]byte, stat.Size())
-	file.Read(buffer)
-	file.Close()
-	return buffer
+	newkey := new(big.Int).SetBytes(bytesl)
+
+	base16str := fmt.Sprintf("%X", newkey)
+
+	return base16str
 }
-
 func main() {
-	resultTable := map[[2]int]int{
-		{0, 0}: 1,
-	}
-	santaPos := [2]int{0, 0}
 
-	//Part 2
-	santa2Pos := [2]int{0, 0}
-	moveSanta := true
-
-	// To repeat part 1 set isPart1 to true
-	isPart1 := false
-	com := loadQuestion()
-
-	for _, operation := range com {
-		operator := operators[operation]
-		var reference *[2]int
-
-		if moveSanta {
-			reference = &santaPos
-		} else {
-			reference = &santa2Pos
+	salt := []byte("ckczppom")
+	// correctAnswer := make([]byte, 5, 32)
+	found5 := false
+	found6 := false
+	for i := 0; true; i++ {
+		code := append(salt, []byte(strconv.Itoa(i))...)
+		hash := md5.Sum(code)
+		nonZeroSize := len(getHexString(hash[:]))
+		if nonZeroSize == 27 && !found5 {
+			log.Println("Part 1 answer is", i)
+			found5 = true
+		} else if nonZeroSize == 26 && !found6 {
+			log.Println("Part 2 answer is", i)
+			found6 = true
 		}
-		moveSanta = !moveSanta || isPart1
-
-		reference[0] -= operator[0]
-		reference[1] -= operator[1]
-
-		resultTable[*reference]++
+		if found5 && found6 {
+			break
+		}
 	}
-	log.Println("result:", len(resultTable))
 }
 
 func init() {
