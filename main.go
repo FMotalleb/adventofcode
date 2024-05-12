@@ -33,15 +33,33 @@ func main() {
 	resultTable := map[[2]int]int{
 		{0, 0}: 1,
 	}
-	currentPos := [2]int{0, 0}
+	santaPos := [2]int{0, 0}
+
+	//Part 2
+	santa2Pos := [2]int{0, 0}
+	moveSanta := true
+
+	// To repeat part 1 set isPart1 to true
+	isPart1 := false
 	com := loadQuestion()
+
 	for _, operation := range com {
 		operator := operators[operation]
-		currentPos[0] += operator[0]
-		currentPos[1] += operator[1]
-		resultTable[currentPos]++
+		var reference *[2]int
+
+		if moveSanta {
+			reference = &santaPos
+		} else {
+			reference = &santa2Pos
+		}
+		moveSanta = !moveSanta || isPart1
+
+		reference[0] -= operator[0]
+		reference[1] -= operator[1]
+
+		resultTable[*reference]++
 	}
-	log.Println("all houses", len(resultTable))
+	log.Println("result:", len(resultTable))
 }
 
 func init() {
