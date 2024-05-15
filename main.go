@@ -2,41 +2,61 @@ package main
 
 import (
 	"log"
+	"net"
 	"os"
-	"strings"
+	"strconv"
+	"time"
+
+	dotenv "github.com/fmotalleb/adventofcode/dot_env"
+	"github.com/gin-gonic/gin"
 )
 
-func loadQuestion() []byte {
-	file, err := os.Open("code.txt")
-	if err != nil {
-		log.Panicln("open file with error", err)
+func getListenAddress() (addr net.TCPAddr, err error) {
+	port, e := strconv.Atoi(os.Getenv("PORT"))
+	log.Println(os.Getenv("HOST"), port)
+	switch e {
+	case nil:
+		addr = net.TCPAddr{
+			IP:   net.ParseIP(os.Getenv("HOST")),
+			Port: port,
+			Zone: "",
+		}
+	default:
+		err = e
 	}
-	stat, err := file.Stat()
-	if err != nil {
-		log.Panicln("open file with error", err)
-	}
-	buffer := make([]byte, stat.Size())
-	file.Read(buffer)
-	file.Close()
-	return buffer
+	return
 }
-
 func main() {
-	data := string(loadQuestion())
-	lines := strings.Split(data, "\n")
-	okCountPt1 := 0
-	okCountPt2 := 0
-	for _, line := range lines {
-		if IsNicePt1(line) {
-			okCountPt1++
-		}
-		if IsNicePt2(line) {
-			okCountPt2++
-		}
+	dotenv.Load()
+
+	router := gin.Default()
+
+	router.GET("/", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "Hello, Gin!",
+		})
+	})
+
+	runServer(router)
+
+	for {
+		time.Sleep(time.Second * 5)
 	}
-	log.Println("Part 1:", okCountPt1, ", Part 2:", okCountPt2)
 }
 
-func init() {
-	log.SetOutput(os.Stdout)
+func runServer(engine *gin.Engine) {
+	for {
+		addr, err := getListenAddress()
+		if err != nil {
+			panic(err)
+		}
+		listener, err := net.ListenTCP("tcp", &addr)
+		if err != nil {
+			panic(err)
+		}
+		go engine.RunListener(listener)
+		<-dotenv.Watch()
+		listener.Close()
+	}
+
 }
